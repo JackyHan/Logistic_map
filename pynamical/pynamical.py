@@ -116,46 +116,6 @@ def logistic_map(pop, rate):
     
     
     
-
-@jit(cache=True, nopython=True)    
-def cubic_map(pop, rate):
-    """
-    Define the equation for the cubic map.
-    
-    Arguments
-    ---------
-    pop: float, current population value at time t
-    rate: float, growth rate parameter values
-    
-    Returns
-    -------
-    scalar result of cubic map at time t+1
-    """
-    
-    return rate * pop ** 3 + pop * (1 - rate)
-    
-
-    
-    
-@jit(cache=True, nopython=True)    
-def singer_map(pop, rate):
-    """
-    Define the equation for the singer map.
-    
-    Arguments
-    ---------
-    pop: float, current population value at time t
-    rate: float, growth rate parameter values
-    
-    Returns
-    -------
-    scalar result of singer map at time t+1
-    """
-    
-    return rate * (7.86 * pop - 23.31 * pop ** 2 + 28.75 * pop ** 3 - 13.3 * pop ** 4)
-
-    
-    
     
 def simulate(model=logistic_map, num_gens=50, rate_min=0.5, rate_max=4, num_rates=8, num_discard=0, initial_pop=0.5, jit=True):
     """
@@ -799,6 +759,14 @@ def cobweb_plot(model=logistic_map, r=0, function_n=1000, cobweb_n=100, cobweb_x
         filename = 'cobweb-plot-r{}-x{}'.format(r, cobweb_x).replace('.', '')
     
     return save_and_show(fig=fig, ax=ax, save=save, show=show, filename=filename, folder=folder, dpi=dpi, bbox_inches=bbox_inches, pad=pad)
+
+def main(argv=None):  # pylint: disable=unused-argument
+    pops = simulate(num_gens=100, rate_min=2.8, rate_max=4, num_rates=1000, num_discard=200, initial_pop=0.1)
+    bifurcation_plot(pops, xmin=2.8, xmax=4, filename='logistic-map-bifurcation-2')
+
+
+if __name__ == '__main__':
+    main()
     
     
     
