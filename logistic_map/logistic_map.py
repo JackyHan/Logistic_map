@@ -1,4 +1,4 @@
-#################################################################################################################
+################################################################################################################
 # Logistic_map
 # Description: Model, simulate, and visualize logistic map and chaos
 # Author: Jacky Han
@@ -26,10 +26,11 @@
 # SOFTWARE.
 #################################################################################################################
 
-import pandas as pd, numpy as np
+import pandas as pd, numpy as np, math
 import matplotlib.pyplot as plt, matplotlib.cm as cm, matplotlib.font_manager as fm
 from mpl_toolkits.mplot3d import Axes3D
 from numba import jit
+np.set_printoptions(threshold=np.nan)
 
 
 # define the fonts to use for plot titles and labels
@@ -38,7 +39,7 @@ title_font = fm.FontProperties(family=_font_family, style='normal', size=20, wei
 label_font = fm.FontProperties(family=_font_family, style='normal', size=16, weight='normal', stretch='normal')
 
 
-def save_fig(filename='image', folder='/home/jackyhan/Desktop', dpi=300, bbox_inches='tight', pad=0.1):
+def save_fig(filename='image', folder='/Users/jackyhan/Desktop/', dpi=300, bbox_inches='tight', pad=0.1):
     """
     Save the current figure as a file to disk.
     
@@ -60,7 +61,7 @@ def save_fig(filename='image', folder='/home/jackyhan/Desktop', dpi=300, bbox_in
     
     
     
-def save_and_show(fig, ax, save, show, filename='image', folder='/home/jackyhan/Desktop', dpi=300, bbox_inches='tight', pad=0.1):
+def save_and_show(fig, ax, save, show, filename='image', folder='/Users/jackyhan/Desktop/', dpi=300, bbox_inches='tight', pad=0.1):
     """
     Consistently handle plot completion by saving then either displaying or returning the figure.
     
@@ -137,6 +138,9 @@ def simulate_points_range(num_gens, rate_one, rate_two, num_discard, initial_pop
     rate_two: float, the second growth rate for the model, between 0 and 4
     num_discard: int, number of generations to discard before keeping population values
     initial_pop_one/two: float, starting population when you run the model, between 0 and 1
+    e_min: min value of e
+    e_max: max value of e
+    num_e: number of e to be used between the min and max
     
     Returns
     -------
@@ -181,6 +185,7 @@ def simulate_points_single(num_gens, rate_one, rate_two, num_discard, initial_po
     rate_two: float, the second growth rate for the model, between 0 and 4
     num_discard: int, number of generations to discard before keeping population values
     initial_pop_one/two: float, starting population when you run the model, between 0 and 1
+    e: coupling coefficient
     
     Returns
     -------
@@ -219,6 +224,7 @@ def get_bifurcation_plot_points_range(pops, one_or_two):
     Arguments
     ---------
     pops: DataFrame, population data output from the model
+    one_or_two: display pop1 or pop2, 1 for pop1, 2 for pop2
     
     Returns
     -------
@@ -249,6 +255,7 @@ def get_bifurcation_plot_points_single(pops, one_or_two):
     Arguments
     ---------
     pops: DataFrame, population data output from the model
+    one_or_two: display pop1 or pop2, 1 for pop1, 2 for pop2
     
     Returns
     -------
@@ -270,9 +277,9 @@ def get_bifurcation_plot_points_single(pops, one_or_two):
 
     
 def bifurcation_plot_range(pops, xmin=0, xmax=4, ymin=0, ymax=1, figsize=(10,6),
-                     title='Bifurcation Diagram', xlabel='Epsilon', ylabel='Population', 
+                     title='', xlabel='Epsilon', ylabel='Population', 
                      color='#003399', filename='', save=True, show=True, title_font=title_font, label_font=label_font,
-                     folder='/home/jackyhan/Desktop', dpi=300, bbox_inches='tight', pad=0.1):
+                     folder='/Users/jackyhan/Desktop/', dpi=300, bbox_inches='tight', pad=0.1, correlation = False):
     """
     Plot the results of the model as a bifurcation diagram.
     
@@ -309,12 +316,19 @@ def bifurcation_plot_range(pops, xmin=0, xmax=4, ymin=0, ymax=1, figsize=(10,6),
     # plot the xy data
     point1 = get_bifurcation_plot_points_range(pops, 1)
     point2 = get_bifurcation_plot_points_range(pops, 2)
-    bifurcation_scatter = ax.scatter(point1['x'], point1['y'], c='#000000', edgecolor='None', alpha=1, s=1)
-    bifurcation_scatter = ax.scatter(point2['x'], point2['y'], c='#fff200', edgecolor='None', alpha=1, s=1)
+    bifurcation_scatter = ax.scatter(point1['x'], point1['y'], c='#00a9ff', edgecolor='None', alpha=1, s=1)
+    bifurcation_scatter = ax.scatter(point2['x'], point2['y'], c='#ffa500', edgecolor='None', alpha=1, s=1)
+    
+    # plot the correlation
+    if correlation:
+        point3 = get_correlation_points(pops)
+        point4 = np.array(point3)
+        print(point4)
+        ax.plot(point3['x'], point3['y'])
     
     # set x and y limits, title, and x and y labels
     ax.set_xlim(xmin, xmax)
-    ax.set_ylim(ymin, ymax)
+    ax.set_ylim(-1.1, 1.1)
     ax.set_title(title, fontproperties=title_font)
     ax.set_xlabel(xlabel, fontproperties=label_font)
     ax.set_ylabel(ylabel, fontproperties=label_font)
@@ -323,9 +337,9 @@ def bifurcation_plot_range(pops, xmin=0, xmax=4, ymin=0, ymax=1, figsize=(10,6),
 
     
 def bifurcation_plot_single(pops, xmin=0, xmax=4, ymin=0, ymax=1, figsize=(10,6),
-                     title='Bifurcation Diagram', xlabel='Time step', ylabel='Population', 
+                     title='', xlabel='Time step', ylabel='Population', 
                      color='#003399', filename='', save=True, show=True, title_font=title_font, label_font=label_font,
-                     folder='/home/jackyhan/Desktop', dpi=300, bbox_inches='tight', pad=0.1):
+                     folder='/Users/jackyhan/Desktop/', dpi=300, bbox_inches='tight', pad=0.1):
     """
     Plot the results of the model as a bifurcation diagram.
     
@@ -362,8 +376,8 @@ def bifurcation_plot_single(pops, xmin=0, xmax=4, ymin=0, ymax=1, figsize=(10,6)
     # plot the xy data
     point1 = get_bifurcation_plot_points_single(pops, 1)
     point2 = get_bifurcation_plot_points_single(pops, 2)
-    bifurcation_scatter = ax.plot(point1['x'], point1['y'], c='#000000')
-    bifurcation_scatter = ax.plot(point2['x'], point2['y'], c='#fff200')
+    bifurcation_scatter = ax.plot(point1['x'], point1['y'], c='#00a9ff')
+    bifurcation_scatter = ax.plot(point2['x'], point2['y'], c='#ffa500')
     
     # set x and y limits, title, and x and y labels
     ax.set_xlim(xmin, xmax)
@@ -373,16 +387,47 @@ def bifurcation_plot_single(pops, xmin=0, xmax=4, ymin=0, ymax=1, figsize=(10,6)
     ax.set_ylabel(ylabel, fontproperties=label_font)
     
     return save_and_show(fig=fig, ax=ax, save=save, show=show, filename=filename, folder=folder, dpi=dpi, bbox_inches=bbox_inches, pad=pad)
+    
+def correlation(a, b):
+    #a = np.array(pop['pop1'])
+    #b = np.array(pop['pop2'])
+    meanOne = np.mean(a)
+    meanTwo = np.mean(b)
+    stdOne = np.std(a)
+    stdTwo = np.std(b)
+    s = a.size
+    sum = 0
+    for i in range(0,s):
+        sum += (a[i]-meanOne)/stdOne * (b[i]-meanTwo)/stdTwo
+    if stdOne < 0.0001 or stdTwo < 0.0001:
+        return 0
+    return float(sum)/s
+    
+def get_correlation_points(pops):
+    xy_points = pd.DataFrame(columns=['x', 'y'])
+    pop1 = pops['pop1']
+    pop2 = pops['pop2']
+    for e in pop1.columns:
+        pop_temp1 = np.array(pop1[e])
+        pop_temp2 = np.array(pop2[e])
+        cor = correlation(pop_temp1, pop_temp2)
+        xy_points = xy_points.append(pd.DataFrame({'x':[e], 'y':[cor]}))
+        xy_points = xy_points.reset_index().drop(labels='index', axis=1)
+    return xy_points
+        
 
     
 def main(argv=None):  
-  pops = simulate_points_range(num_gens = 300, rate_one = 2.9, rate_two = 3.8, num_discard = 200, initial_pop_one = 0.5, initial_pop_two = 0.4, e_min = 0.88, e_max = 0.9, num_e = 1000)
+  pops = simulate_points_range(num_gens = 300, rate_one = 3.838, rate_two = 3.976, num_discard = 300, initial_pop_one = 0.5, initial_pop_two = 0.7, e_min = 0, e_max = 1, num_e = 400)
   
-  bifurcation_plot_range(pops, xmin=0.88, xmax=0.9, filename='logistic-map-bifurcation-1')
   
-  #pop = simulate_points_single(num_gens = 100, rate_one = 2.9, rate_two = 3.8, num_discard = 200, initial_pop_one = 0.5, initial_pop_two = 0.4, e=0.2)
+  bifurcation_plot_range(pops, xmin=0, xmax=1, filename='logistic-map-bifurcation-1', correlation = True)
+  
+  #pop = simulate_points_single(num_gens = 100, rate_one = 3.8, rate_two = 3.5, num_discard = 300, initial_pop_one = 0.6, initial_pop_two = 0.7, e=0.05)
   #print(pop)
   #bifurcation_plot_single(pop, xmin=0, xmax=100, filename='logistic-map-bifurcation-2') 
+  
+  
 
 if __name__ == '__main__':
   main()
